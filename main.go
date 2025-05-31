@@ -122,7 +122,9 @@ func main() {
 
 	// Current temperature
 	if len(data.Hourly.Temperature2m) > 0 {
-		currentTemp := data.Hourly.Temperature2m[0]
+		now := time.Now()
+		hour := now.Hour()
+		currentTemp := data.Hourly.Temperature2m[hour]
 		fmt.Printf("\n%s %s\n\n", country, "/ "+city+": "+formatTemp(currentTemp))
 	}
 
