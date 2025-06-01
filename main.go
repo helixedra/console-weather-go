@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -83,6 +84,11 @@ func getCoords() (float64, float64, string, string, error) {
 }
 
 func main() {
+
+	forecast := flag.Bool("fc", false, "Show forecast")
+
+	flag.Parse()
+
 	lat, lon, city, country, err := getCoords()
 	if err != nil {
 		log.Fatalf("Get coords error: %v", err)
@@ -127,40 +133,41 @@ func main() {
 		currentTemp := data.Hourly.Temperature2m[hour]
 		fmt.Printf("\n%s %s\n\n", country, "/ "+city+": "+formatTemp(currentTemp))
 	}
+	if *forecast {
+		layoutDate := "(Mon) Jan 02, 2006"
 
-	layoutDate := "(Mon) Jan 02, 2006"
+		// Parse dates
+		parsedDates := make([]time.Time, 0, len(daily))
+		dateMap := make(map[time.Time]string)
 
-	// Parse dates
-	parsedDates := make([]time.Time, 0, len(daily))
-	dateMap := make(map[time.Time]string)
-
-	for dateStr := range daily {
-		t, err := time.Parse(layoutDate, dateStr)
-		if err != nil {
-			log.Fatalf("Parse date error: %s: %v", dateStr, err)
-		}
-		parsedDates = append(parsedDates, t)
-		dateMap[t] = dateStr
-	}
-
-	// Sort dates
-	sort.Slice(parsedDates, func(i, j int) bool {
-		return parsedDates[i].Before(parsedDates[j])
-	})
-
-	// Print dates
-	for _, t := range parsedDates {
-		dateStr := dateMap[t]
-		temps := daily[dateStr]
-		min, max := temps[0], temps[0]
-		for _, temp := range temps[1:] {
-			if temp < min {
-				min = temp
+		for dateStr := range daily {
+			t, err := time.Parse(layoutDate, dateStr)
+			if err != nil {
+				log.Fatalf("Parse date error: %s: %v", dateStr, err)
 			}
-			if temp > max {
-				max = temp
-			}
+			parsedDates = append(parsedDates, t)
+			dateMap[t] = dateStr
 		}
-		fmt.Printf("%s - %s : %s\n", formatTemp(min), formatTemp(max), dateStr)
+
+		// Sort dates
+		sort.Slice(parsedDates, func(i, j int) bool {
+			return parsedDates[i].Before(parsedDates[j])
+		})
+
+		// Print dates
+		for _, t := range parsedDates {
+			dateStr := dateMap[t]
+			temps := daily[dateStr]
+			min, max := temps[0], temps[0]
+			for _, temp := range temps[1:] {
+				if temp < min {
+					min = temp
+				}
+				if temp > max {
+					max = temp
+				}
+			}
+			fmt.Printf("%s - %s : %s\n", formatTemp(min), formatTemp(max), dateStr)
+		}
 	}
 }
